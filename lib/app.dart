@@ -21,11 +21,11 @@ class MyApp extends StatelessWidget {
       routerDelegate: RoutemasterDelegate(
         routesBuilder: (BuildContext context) => RouteMap(
           routes: {
-            '/': (routeData) => const MaterialPage(child: Login()),
-            '/mySchedule': (routeData) => const MaterialPage(child: HomeView()),
-            '/noLine': (routeData) => const MaterialPage(child: NoLine()),
-            '/allSchedule': (routeData) => const MaterialPage(child: AllSchedule()),
-            '/setting': (routeData) => const MaterialPage(child: Setting()),
+            '/': (_) => const MaterialPage(child: Login()),
+            '/mySchedule': (_) => const MaterialPage(child: HomeView()),
+            '/noLine': (_) => const MaterialPage(child: NoLine()),
+            '/allSchedule': (_) => const MaterialPage(child: AllSchedule()),
+            '/setting': (_) => const MaterialPage(child: Setting()),
           }
         ),
       ),
