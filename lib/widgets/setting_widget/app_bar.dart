@@ -11,6 +11,7 @@ class SettingAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       automaticallyImplyLeading: false,
       elevation: 5,
+      title: const Text('設定'),
     );
   }
   

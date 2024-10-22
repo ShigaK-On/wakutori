@@ -9,7 +9,7 @@ class Setting extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       appBar: SettingAppBar(),
-      body: SettingBody(),
+      body: SafeArea(child: SettingBody()),
     );
   }
 }
