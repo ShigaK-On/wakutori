@@ -84,7 +84,7 @@ class Result extends StatelessWidget {
   Map<String, dynamic> getBestTime(List<ContentsClass> snapshotData) {
     Map<String, dynamic> bestTimeAsMap = {};
     const List<String> dates = ['火', '水', '木', '金', '土', '日', '月'];
-    const List<String> times = ['', '1限', '2限', '昼休み', '3限', '4限', '5限', '6限', '7限'];
+    const List<String> times = ['1限', '2限', '昼休み', '3限', '4限', '5限', '6限', '7限'];
     final List<List<int>> bestTime = [];
     for(int i = 0; i < 7; i++) {
       bestTime.add(List.filled(8, 0));

@@ -1,12 +1,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wakutori/utils/half_mode.dart';
 import 'package:wakutori/utils/logger.dart';
+import 'package:wakutori/utils/screen_size.dart';
+import 'package:wakutori/widgets/setting_widget/confirm_alert.dart';
 
-final StateProvider<bool> halfModeToggle = StateProvider<bool>((ref) => false);
+final StateProvider<bool> halfModeToggle = StateProvider<bool>((ref) => isHalfMode);
 final StateProvider<int> radioGroupValue = StateProvider<int>((ref) => 0);
 final StateProvider<int> bandCountValue = StateProvider<int>((ref) => 1);
 final StateProvider<bool> editModeToggle = StateProvider<bool>((ref) => true);
+final StateProvider<String> primaryWord = StateProvider<String>((ref) => '');
 
 class SettingBody extends ConsumerWidget {
   const SettingBody({Key? key}) : super(key: key);
@@ -15,6 +19,7 @@ class SettingBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.only(
+        top: 5,
         right: 5,
         left: 5,
       ),
@@ -27,14 +32,26 @@ class SettingBody extends ConsumerWidget {
               ListTile(
                 title: const Text('枠を確定する'),
                 trailing: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () => showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return SettingConfirmAlert(settings: {
+                        '各バンド枠数上限': ref.read(bandCountValue),
+                        '優先する単語': ref.read(primaryWord),
+                        '枠の優先方法': ref.read(radioGroupValue),
+                        '枠の書き換え': ref.read(editModeToggle),
+                        '前後半モード（次週）': ref.read(halfModeToggle),
+                      });
+                    },
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.secondary,
                     foregroundColor: Colors.black,
                   ),
-                  child: const Text('確定'),
+                  child: const Text('確認'),
                 ),
               ),
+              const Divider(),
               ListTile(
                 title: const Text('1バンド何枠まで'),
                 trailing: DropdownButton(
@@ -64,6 +81,20 @@ class SettingBody extends ConsumerWidget {
                   onChanged: (i) {
                     ref.read(bandCountValue.notifier).state = i!;
                   },
+                ),
+              ),
+              ListTile(
+                title: const Text('優先する単語'),
+                trailing: SizedBox(
+                  width: screenSize.width * 0.5,
+                  child: TextField(
+                    onChanged: (e) {
+                      ref.read(primaryWord.notifier).state = e;
+                    },
+                    decoration: const InputDecoration(
+                      hintText: '例: 学祭, 合宿',
+                    ),
+                  ),
                 ),
               ),
               ExpansionTile(
@@ -96,8 +127,9 @@ class SettingBody extends ConsumerWidget {
                   },
                 ),
               ),
+              const Divider(),
               ListTile(
-                title: const Text('前後半モード'),
+                title: const Text('前後半モード（次週から）'),
                 trailing: CupertinoSwitch(
                   value: ref.watch(halfModeToggle),
                   onChanged: (v) {
