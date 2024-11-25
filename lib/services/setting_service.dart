@@ -59,9 +59,7 @@ void setAllSchedule(
   for (String date in dates) {
     for (String time in times) {
       completeList.addAll({
-        '$date曜日 $time': {
-          '': 0,
-        },
+        '$date曜日 $time': {}, //ここはなんとなく'':0で初期化してたのを一旦消したけど、必要なら復活させて！
       });
     }
   }
@@ -99,22 +97,30 @@ void setAllSchedule(
       }
     });
 
+    //rankedBands内の各dateTimeをキー、map<String, int>にrankedBandsのname、densityを代入したvalueを持つmapを作成
+
     if (rankedBands[name]!.isEmpty) {
       rankedBands.remove(name);
+    }else{
+      rankedBands[name]!.forEach((dateTime, density) {
+        if (!completeList.containsKey(dateTime)) {
+          completeList[dateTime] = {};
+        }
+        completeList[dateTime]![name] = density;
+      });
     }
 
-    //rankedBands内の各dateTimeをキー、map<String, int>にrankedBandsのname、densityを代入したvalueを持つmapを作成
-    rankedBands[name]!.forEach((dateTime, density) {
-      if (completeList.containsKey(dateTime)) {
-        completeList[dateTime]!.addAll({name: density});
-      }
+    //rankedBands内の各バンドを重みで降順ソート
+    rankedBands.forEach((bandName, bandData) {
+      final List<MapEntry<String, int>> sortedData = bandData.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+      rankedBands[bandName] = Map.fromEntries(sortedData);
     });
 
-    //   // rankedBands内の各バンドを重みで降順ソート
-    //   rankedBands.forEach((bandName, bandData) {
-    //     final List<MapEntry<String, int>> sortedData = bandData.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-    //     rankedBands[bandName] = Map.fromEntries(sortedData);
-    //   });
+    //completeList内の各dateTimeを重みで降順ソート
+    completeList.forEach((dateTime, bandData) {
+      final List<MapEntry<String, int>> sortedData = bandData.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+      completeList[dateTime] = Map.fromEntries(sortedData);
+    });
   }
 
   logger.i(rankedBands);
