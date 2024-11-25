@@ -16,10 +16,10 @@ void resetSchedule(bool isBandReset) async {
   final SupabaseClient supabase = Supabase.instance.client;
   try {
     await supabase.from('schedule').delete();
-    if(isBandReset) {
+    if (isBandReset) {
       await supabase.from('band').delete();
     }
-  } catch(e) {
+  } catch (e) {
     logger.e(e);
   }
 }
@@ -38,12 +38,13 @@ void setAllSchedulePreviousWeek() async {
     }).match({
       'week': 0,
     });
-  } catch(e) {
+  } catch (e) {
     logger.e(e);
   }
 }
 
-void setAllSchedule(int bandCount, String primaryWord, int howToSet, bool isRewritable) async {
+void setAllSchedule(
+    int bandCount, String primaryWord, int howToSet, bool isRewritable) async {
   final SupabaseClient supabase = Supabase.instance.client;
   final List<Map<String, dynamic>> bands = await supabase.from('band').select();
 
@@ -55,8 +56,8 @@ void setAllSchedule(int bandCount, String primaryWord, int howToSet, bool isRewr
 
   //最終リストの定義
   final Map<String, Map<String, int>> completeList = {};
-  for(String date in dates) {
-    for(String time in times) {
+  for (String date in dates) {
+    for (String time in times) {
       completeList.addAll({
         '$date曜日 $time': {
           '': 0,
@@ -67,18 +68,20 @@ void setAllSchedule(int bandCount, String primaryWord, int howToSet, bool isRewr
 
   //バンドごとのランキング
   Map<String, Map<String, int>> rankedBands = {};
-  for(Map<String, dynamic> band in bands) {
+  for (Map<String, dynamic> band in bands) {
     final String name = band['band'];
     bandNameCheck.addAll({
       name: 0,
     });
     rankedBands.addAll({name: {}});
-    
-    final List<Map<String, dynamic>> rowData = await supabase.from('schedule').select().eq('band_name', name);
-    final List<ContentsClass> classedData = rowData.map((element) => ContentsClass.fromJson(element)).toList();
+
+    final List<Map<String, dynamic>> rowData =
+        await supabase.from('schedule').select().eq('band_name', name);
+    final List<ContentsClass> classedData =
+        rowData.map((element) => ContentsClass.fromJson(element)).toList();
 
     Map<String, int> bestTimeAsMap = {};
-    for(ContentsClass data in classedData) {
+    for (ContentsClass data in classedData) {
       final String key = '${dates[data.weekday]}曜日 ${times[data.time]}';
       bestTimeAsMap.update(key, (i) => ++i, ifAbsent: () => 1);
     }
@@ -89,22 +92,29 @@ void setAllSchedule(int bandCount, String primaryWord, int howToSet, bool isRewr
         return MapEntry(dateTime, density + 100);
       } else if (name.contains('個人練')) {
         return MapEntry(dateTime, density - 50);
-      } else if(primaryWord.isNotEmpty && name.contains(primaryWord)){
+      } else if (primaryWord.isNotEmpty && name.contains(primaryWord)) {
         return MapEntry(dateTime, density + 50);
       } else {
         return MapEntry(dateTime, density);
       }
     });
 
-    if(rankedBands[name]!.isEmpty) {
+    if (rankedBands[name]!.isEmpty) {
       rankedBands.remove(name);
     }
 
-    // rankedBands内の各バンドを重みで降順ソート
-    rankedBands.forEach((bandName, bandData) {
-      final List<MapEntry<String, int>> sortedData = bandData.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-      rankedBands[bandName] = Map.fromEntries(sortedData);
+    //rankedBands内の各dateTimeをキー、map<String, int>にrankedBandsのname、densityを代入したvalueを持つmapを作成
+    rankedBands[name]!.forEach((dateTime, density) {
+      if (completeList.containsKey(dateTime)) {
+        completeList[dateTime]!.addAll({name: density});
+      }
     });
+
+    //   // rankedBands内の各バンドを重みで降順ソート
+    //   rankedBands.forEach((bandName, bandData) {
+    //     final List<MapEntry<String, int>> sortedData = bandData.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    //     rankedBands[bandName] = Map.fromEntries(sortedData);
+    //   });
   }
 
   logger.i(rankedBands);
