@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:wakutori/utils/half_mode.dart';
@@ -48,6 +50,9 @@ void setAllSchedule(int bandCount, String primaryWord, int howToSet, bool isRewr
   const List<String> dates = ['火', '水', '木', '金', '土', '日', '月'];
   const List<String> times = ['1限', '2限', '昼休み', '3限', '4限', '5限', '6限', '7限'];
 
+  //入力のあるバンドとbandCountのチェック用
+  final Map<String, int> bandNameCheck = {};
+
   //最終リストの定義
   final Map<String, Map<String, int>> completeList = {};
   for(String date in dates) {
@@ -61,12 +66,15 @@ void setAllSchedule(int bandCount, String primaryWord, int howToSet, bool isRewr
   }
 
   //バンドごとのランキング
-  final Map<String, Map<String, int>> rankedBands = {};
+  Map<String, Map<String, int>> rankedBands = {};
   for(Map<String, dynamic> band in bands) {
-    final String bandName = band['band'];
-    rankedBands.addAll({bandName: {}});
+    final String name = band['band'];
+    bandNameCheck.addAll({
+      name: 0,
+    });
+    rankedBands.addAll({name: {}});
     
-    final List<Map<String, dynamic>> rowData = await supabase.from('schedule').select().eq('band_name', bandName);
+    final List<Map<String, dynamic>> rowData = await supabase.from('schedule').select().eq('band_name', name);
     final List<ContentsClass> classedData = rowData.map((element) => ContentsClass.fromJson(element)).toList();
 
     Map<String, int> bestTimeAsMap = {};
@@ -74,45 +82,31 @@ void setAllSchedule(int bandCount, String primaryWord, int howToSet, bool isRewr
       final String key = '${dates[data.weekday]}曜日 ${times[data.time]}';
       bestTimeAsMap.update(key, (i) => ++i, ifAbsent: () => 1);
     }
-    rankedBands[bandName] = collection.SplayTreeMap.of(bestTimeAsMap, (a, b) {
-      int compare = bestTimeAsMap[a]!.compareTo(bestTimeAsMap[b] as num) * -1;
-      return compare == 0 ? 1 : compare;
+
+    //団体練、個人練、優先する単語の重み付け
+    rankedBands[name] = bestTimeAsMap.map((dateTime, density) {
+      if (name.contains('団体練')) {
+        return MapEntry(dateTime, density + 100);
+      } else if (name.contains('個人練')) {
+        return MapEntry(dateTime, density - 50);
+      } else if(primaryWord.isNotEmpty && name.contains(primaryWord)){
+        return MapEntry(dateTime, density + 50);
+      } else {
+        return MapEntry(dateTime, density);
+      }
+    });
+
+    if(rankedBands[name]!.isEmpty) {
+      rankedBands.remove(name);
+    }
+
+    // rankedBands内の各バンドを重みで降順ソート
+    rankedBands.forEach((bandName, bandData) {
+      final List<MapEntry<String, int>> sortedData = bandData.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+      rankedBands[bandName] = Map.fromEntries(sortedData);
     });
   }
 
-  //優先する単語を含むバンドの各日時に50の比重を追加
-  final Map<String, Map<String, int>> primaryRankedBands = {};
-  for(var entry in rankedBands.entries) {
-    final String key = entry.key;
-    final Map<String, int> value = entry.value;
-    if(primaryWord.isNotEmpty && key.contains(primaryWord)) {
-      final Map<String, int> innerMap = {};
-      value.forEach((dateTime, density) {
-        innerMap[dateTime] = density + 50;
-      });
-      primaryRankedBands[key] = innerMap;
-    } else {
-      primaryRankedBands[key] = value;
-    }
-  }
-
-  //最終リストに代入
-  for(int i = 0; i < primaryRankedBands.length; i++) {
-    if(primaryRankedBands.values.elementAt(i).isNotEmpty) {
-      //各バンド枠上限
-      for(int n = 0; n < bandCount; n++) {
-        final String dateTimeKey = primaryRankedBands.values.elementAt(i).keys.elementAt(n);
-        final String newKey = primaryRankedBands.keys.elementAt(i);
-        final int previousValue = completeList[dateTimeKey]![newKey]!;
-        final int newValue = primaryRankedBands.values.elementAt(i).values.elementAt(n);
-        logger.i(previousValue);
-        if(previousValue < newValue){
-          completeList[dateTimeKey] = {
-            newKey: newValue,
-          };
-        }
-      }
-    }
-  }
+  logger.i(rankedBands);
   logger.i(completeList);
 }

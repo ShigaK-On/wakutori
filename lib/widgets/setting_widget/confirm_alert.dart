@@ -10,7 +10,6 @@ class SettingConfirmAlert extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    logger.i(settings);
     return AlertDialog(
       title: const Text('確認'),
       content: SizedBox(

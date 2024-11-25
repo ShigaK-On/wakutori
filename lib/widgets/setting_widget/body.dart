@@ -36,7 +36,7 @@ class SettingBody extends ConsumerWidget {
                     context: context,
                     builder: (BuildContext context) {
                       return SettingConfirmAlert(settings: {
-                        '各バンド枠数上限': ref.read(bandCountValue),
+                        '各バンド枠数上限': ref.read(bandCountValue) + 1,
                         '優先する単語': ref.read(primaryWord),
                         '枠の優先方法': ref.read(radioGroupValue),
                         '枠の書き換え': ref.read(editModeToggle),
