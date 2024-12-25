@@ -44,7 +44,7 @@ void setAllSchedule(
 
   // バンドごとの枠数
   Map<String, int> pendingTimeOfBands = {
-    for (var band in bands) band['band']: bandCount
+    for (Map<String, dynamic> band in bands) band['band']: bandCount
   };
 
   // 日毎の重み付けマップ
@@ -133,18 +133,18 @@ void distributeSchedule(Map<String, Map<String, int>> dayBands, Map<String, int>
   // 確定枠 (dayBandsのindex[0]) の処理
   String firstDate = dayBands.keys.first;
   if (dayBands[firstDate]!.isNotEmpty) {
-    var highestPriorityBand = dayBands[firstDate]!.entries.reduce(
+    MapEntry<String, int> highestPriorityBand = dayBands[firstDate]!.entries.reduce(
             (a, b) => a.value >= b.value ? a : b);
     completedSchedule[firstDate] = highestPriorityBand.key;
     assignedCount.update(highestPriorityBand.key, (value) => value + 1);
   }
 
   // バンド割り当て処理
-  var sortedBandsByRemaining = pendingTimeOfBands.entries.toList()
+  List<MapEntry<String, int>> sortedBandsByRemaining = pendingTimeOfBands.entries.toList()
     ..sort((a, b) => a.value.compareTo(b.value));
 
   // バンドごとの枠数が残っている場合
-  for (var entry in sortedBandsByRemaining) {
+  for (MapEntry<String, int> entry in sortedBandsByRemaining) {
     String bandName = entry.key;
     int remaining = entry.value;
 
@@ -192,7 +192,7 @@ void distributeSchedule(Map<String, Map<String, int>> dayBands, Map<String, int>
   // 上限調整
   for (String bandName in pendingTimeOfBands.keys) {
     while (assignedCount[bandName]! > pendingTimeOfBands[bandName]!) {
-      var excessDates = completedSchedule.entries
+      List<String> excessDates = completedSchedule.entries
           .where((entry) => entry.value == bandName)
           .map((entry) => entry.key)
           .toList();
