@@ -133,25 +133,23 @@ void distributeSchedule(Map<String, Map<String, int>> dayBands, Map<String, int>
   // 確定枠 (dayBandsのindex[0]) の処理
   String firstDate = dayBands.keys.first;
   if (dayBands[firstDate]!.isNotEmpty) {
-    MapEntry<String, int> highestPriorityBand = dayBands[firstDate]!.entries.reduce(
-            (a, b) => a.value >= b.value ? a : b);
+    MapEntry<String, int> highestPriorityBand = dayBands[firstDate]!.entries.reduce((a, b) => a.value >= b.value ? a : b);
     completedSchedule[firstDate] = highestPriorityBand.key;
     assignedCount.update(highestPriorityBand.key, (value) => value + 1);
   }
 
   // バンド割り当て処理
-  List<MapEntry<String, int>> sortedBandsByRemaining = pendingTimeOfBands.entries.toList()
-    ..sort((a, b) => a.value.compareTo(b.value));
+  List<MapEntry<String, int>> sortedBandsByRemaining = pendingTimeOfBands.entries.toList()..sort((a, b) => a.value.compareTo(b.value));
 
   // バンドごとの枠数が残っている場合
   for (MapEntry<String, int> entry in sortedBandsByRemaining) {
     String bandName = entry.key;
     int remaining = entry.value;
 
+    // 未割り当ての枠がある場合
     if (remaining > 0) {
       for (String date in dayBands.keys) {
-        if (completedSchedule[date]!.isEmpty &&
-            dayBands[date]!.containsKey(bandName)) {
+        if (completedSchedule[date]!.isEmpty && dayBands[date]!.containsKey(bandName)) {
           completedSchedule[date] = bandName;
           assignedCount.update(bandName, (value) => value + 1);
           break;
@@ -165,11 +163,7 @@ void distributeSchedule(Map<String, Map<String, int>> dayBands, Map<String, int>
     if (completedSchedule[date]!.isNotEmpty) {
       String assignedBand = completedSchedule[date]!;
       if (assignedCount[assignedBand]! > pendingTimeOfBands[assignedBand]!) {
-        conflictMap.update(
-          date,
-              (value) => [...value, assignedBand],
-          ifAbsent: () => [assignedBand],
-        );
+        conflictMap.update(date, (value) => [...value, assignedBand], ifAbsent: () => [assignedBand]);
       }
     }
   }
@@ -177,10 +171,10 @@ void distributeSchedule(Map<String, Map<String, int>> dayBands, Map<String, int>
   // 競合解決処理
   for (String date in conflictMap.keys) {
     List<String> conflictingBands = conflictMap[date]!;
-    conflictingBands.sort((a, b) =>
-        assignedCount[a]!.compareTo(assignedCount[b]!));
+    conflictingBands.sort((a, b) => assignedCount[a]!.compareTo(assignedCount[b]!));
 
     for (String bandName in conflictingBands) {
+      // 上限を超えているバンドがある場合
       if (assignedCount[bandName]! > pendingTimeOfBands[bandName]!) {
         completedSchedule[date] = '';
         assignedCount.update(bandName, (value) => value - 1);
@@ -192,14 +186,14 @@ void distributeSchedule(Map<String, Map<String, int>> dayBands, Map<String, int>
   // 上限調整
   for (String bandName in pendingTimeOfBands.keys) {
     while (assignedCount[bandName]! > pendingTimeOfBands[bandName]!) {
+      // 重複枠の日付を取得
       List<String> excessDates = completedSchedule.entries
           .where((entry) => entry.value == bandName)
           .map((entry) => entry.key)
           .toList();
 
       if (excessDates.isNotEmpty) {
-        excessDates.sort((a, b) =>
-            dayBands[a]![bandName]!.compareTo(dayBands[b]![bandName]!));
+        excessDates.sort((a, b) => dayBands[a]![bandName]!.compareTo(dayBands[b]![bandName]!));
         completedSchedule[excessDates.first] = '';
         assignedCount.update(bandName, (value) => value - 1);
       }
@@ -210,8 +204,7 @@ void distributeSchedule(Map<String, Map<String, int>> dayBands, Map<String, int>
   for (String bandName in pendingTimeOfBands.keys) {
     if (assignedCount[bandName] == 0) {
       for (String date in dayBands.keys) {
-        if (completedSchedule[date]!.isEmpty &&
-            dayBands[date]!.containsKey(bandName)) {
+        if (completedSchedule[date]!.isEmpty && dayBands[date]!.containsKey(bandName)) {
           completedSchedule[date] = bandName;
           assignedCount.update(bandName, (value) => value + 1);
           break;
